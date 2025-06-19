@@ -15,6 +15,7 @@ services:
     ports:
       - 9999:3000
     volumes:
+      - ./grafana/config:/usr/share/grafana/conf
       - ./grafana/data:/var/lib/grafana
   snmp-exporter:
     hostname: snmp-exporter
