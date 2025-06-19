@@ -12,10 +12,12 @@ services:
     hostname: grafana
     container_name: grafana
     image: grafana/grafana-enterprise
+    environment:
+      - GF_PATHS_CONFIG=/usr/share/grafana-config/custom.ini
     ports:
       - 9999:3000
     volumes:
-      - ./grafana/config:/usr/share/grafana/conf
+      - ./grafana/config:/usr/share/grafana-config
       - ./grafana/data:/var/lib/grafana
   snmp-exporter:
     hostname: snmp-exporter
