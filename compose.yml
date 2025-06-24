@@ -36,5 +36,10 @@ services:
       context: './carel-exporter'
     ports:
       - 9902:9000
-
-
+  cobalt-exporter:
+    hostname: cobalt-exporter
+    container_name: cobalt-exporter
+    build:
+      context: './cobalt-exporter'
+    ports:
+      - 9903:9000

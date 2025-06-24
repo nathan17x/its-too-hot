@@ -1,5 +1,7 @@
 import { SlotResponse, AllSlotsResponse } from "./types.ts";
 import { load } from "https://deno.land/std@0.224.0/dotenv/mod.ts";
+import { Application } from "jsr:@oak/oak/application";
+import { Router } from "jsr:@oak/oak/router";
 
 await load({ export: true });
 
@@ -18,6 +20,7 @@ function webSocketQuery<T>({
 }: WebSocketQueryOptions ): Promise<T>{
   return new Promise((resolve, reject)=>{
     setTimeout(()=>{
+      socket.close()
       reject(new Error(`Websocket connection to ${wsAddress} timed out after ${timeout}ms.`))
     }, timeout)
     const socket = new WebSocket(wsAddress);
@@ -27,21 +30,63 @@ function webSocketQuery<T>({
     socket.onmessage = (event: MessageEvent) => {
       const data = JSON.parse(event.data);
       if (data.id === expectedResponseID) {
+        socket.close();
         resolve(data)
       } 
-      socket.close();
     };
   })
+}
+
+const findCardProductNames = (menuGroupsResponse) => {  
+  try {
+    const statusMenuGroup = menuGroupsResponse.menugroups.find(item => item.menugroupType === 'status');
+    const productMenu = statusMenuGroup.menus.find(item => item.name.includes('Product'));
+    return productMenu.subMenus.map(item => item.name).join(', ');
+  } catch (error) {
+    return "Unknown Product" // TODO find more product types by querying the OID returned in productMenu 
+  }
+}
+
+const getStatusMenuID = (menuGroupsResponse) => {
+  try {
+    const statusMenuID = menuGroupsResponse.menugroups.findIndex(item => item.menugroupType === 'status');
+    return statusMenuID;
+  } catch (error) {
+    console.error(error.message)
+    return undefined;
+  }
+}
+
+const parseCardMetrics = (statusMenuResponse, slotNumber: number, cardName: string) => {
+  try {
+    // return JSON.stringify(statusMenuResponse, null, 2);
+    let responseString = ""
+    for (let parameter of statusMenuResponse.parameters) {
+      if (typeof parameter.value === 'number'){
+        const cleanedName = parameter.name
+          .replaceAll(' ', '_')
+          .replaceAll('(','')
+          .replaceAll(')','')
+          .toLowerCase()
+        responseString += `${cleanedName}{slot="${slotNumber}",card_name="${cardName}"} ${parameter.value} \n`
+      }
+    }
+    return responseString
+  } catch (error) {
+    console.error(error.message)
+  }
 }
 
 interface queryCobaltCardOptions {
   frameWSAddress: string,
   cardNumber: number,
+  cardName: string,
 }
 
 const queryCobaltCard = async ({
   frameWSAddress,
   cardNumber,
+  cardName
 }: queryCobaltCardOptions) => {
   try {
     const menuGroupsResponse = await webSocketQuery({
@@ -50,16 +95,20 @@ const queryCobaltCard = async ({
       expectedResponseID: 0,
     })
 
-    console.log(menuGroupsResponse.menugroups[0].menus[0].subMenus[0].name) // ooga booga
+    const statusMenuID = getStatusMenuID(menuGroupsResponse);
 
-    const cobaltCardResponse: SlotResponse = await webSocketQuery({
+    const statusMenuResponse = await webSocketQuery({
       wsAddress: `http://${frameWSAddress}/rosetta_api/slots/${cardNumber}`,
-      message: `{"oids":"all","menuId":0,"method":"get","id":1}`,
+      message: `{"oids":"all","menuId":${statusMenuID},"method":"get","id":1}`,
       expectedResponseID: 1,
     })
+
+    return parseCardMetrics(statusMenuResponse, cardNumber, cardName);
+
   } catch (error) {
     console.error(`Error while querying card ${cardNumber} in the frame at ${frameWSAddress}.`)
     console.error(error.message)
+    return "oh"
   }
 }
 
@@ -73,21 +122,32 @@ const queryCobaltFrame = async (frameWSAddress: string) => {
     const cardResponsePromises = allSlotsResponse.slots
       .filter((slot) => slot.status === 'card')
       .map(card => {
-        console.log(card)
-        queryCobaltCard({frameWSAddress: frameWSAddress, cardNumber: card.slot})
+        return queryCobaltCard({frameWSAddress: frameWSAddress, cardNumber: card.slot, cardName: card.name})
       })
     
-    const results = await Promise.allSettled(cardResponsePromises)
+    const results = (await Promise.allSettled(cardResponsePromises)).filter(result => result.status === 'fulfilled').map(result => result.value)
+    return results.join('\n');
 
   } catch (error) {
     console.error(`WebSocket query to ${frameWSAddress} failed.`)
     console.error(error.message)
+    return null;
   }
 }
 
-await queryCobaltFrame(Deno.env.get("TEST_ADDRESS") as string)
+// await queryCobaltFrame(Deno.env.get("TEST_ADDRESS"))
 
+const router = new Router();
+router.get("/metrics/:address", async (ctx) => {
+  ctx.response.body = await queryCobaltFrame(ctx.params.address);
+});
 
+const app = new Application();
+app.use(router.routes());
+app.use(router.allowedMethods());
+app.listen({ port: 9000 });
+
+console.log('hello from cobalt-exporter')
 // endpoint: /metrics/frameaddress
 
 // query frame for card locations
