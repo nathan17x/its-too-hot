@@ -1,6 +1,4 @@
-# its-too-hot
-Custom exporters, Prometheus and Grafana configs for broadcast equipment 
-## Carel Exporter
+# Carel Exporter
 > Used to export prometheus metrics from the Carel c.pCO HVAC controller.
 
 Run the docker container and configure a prometheus source for each controller:
@@ -11,4 +9,3 @@ Run the docker container and configure a prometheus source for each controller:
     - targets: [carel-exporter:9000] 
       labels:
         instance: ac_streetside
-```
