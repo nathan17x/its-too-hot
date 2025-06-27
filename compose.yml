@@ -8,6 +8,7 @@ services:
     volumes:
       - ./prometheus/config:/etc/prometheus
       - ./prometheus/data:/prometheus
+    restart: unless-stopped
   grafana:
     hostname: grafana
     container_name: grafana
@@ -19,6 +20,7 @@ services:
     volumes:
       - ./grafana/config:/usr/share/grafana-config
       - ./grafana/data:/var/lib/grafana
+    restart: unless-stopped
   snmp-exporter:
     hostname: snmp-exporter
     container_name: snmp-exporter
@@ -29,6 +31,7 @@ services:
     volumes:
       - ./snmp-exporter/config:/etc/snmp-exporter
     command: --config.file=/etc/snmp-exporter/snmp.yml
+    restart: unless-stopped
   carel-exporter:
     hostname: carel-exporter
     container_name: carel-exporter
@@ -36,6 +39,7 @@ services:
       context: './carel-exporter'
     ports:
       - 9902:9000
+    restart: unless-stopped
   cobalt-exporter:
     hostname: cobalt-exporter
     container_name: cobalt-exporter
@@ -43,3 +47,4 @@ services:
       context: './cobalt-exporter'
     ports:
       - 9903:9000
+    restart: unless-stopped
