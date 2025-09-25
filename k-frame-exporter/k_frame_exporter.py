@@ -16,13 +16,16 @@ def metrics(slug):
       
       # power supply status
       ps_status_data = soup.find(string="Power Supply and Chassis Status").parent.parent.find_next_sibling('pre')
-      ps_status_lines = ps_status_data.text.splitlines()
+      ps_status_and_chassis_lines = ps_status_data.text.splitlines()
+      
+      ps_status_lines = 
       
       for line in ps_status_lines:
         split = line.split(":")
-        metric_name = split[0].strip()
-        ps_status = split[1].strip()
-        metrics_list.append(f"{metric_name.lower().replace(" ", "_")}{{frame_address=\"{slug}\"}} {ps_status.lower().replace(" ", "_")}")
+        metric_name = split[0].strip().lower().replace(" ", "_")
+        ps_status_string = split[1].strip().lower().replace(" ", "_")
+        
+        metrics_list.append(f"k_frame_{metric_name}{{frame_address=\"{slug}\", ps_status=\"{ps_status_string}\"}} 1")
         
       # fan status
       fan_status_data = soup.find(string="Fan Status").parent.parent.find_next('table')
@@ -60,7 +63,6 @@ def metrics(slug):
       slot_status_rows = slot_status_data.find_all('tr')
       for row in slot_status_rows[1:]:
         columns = row.find_all('td')
-        print(columns)
         slot_name = columns[0].text.lower().strip().replace(" ","_")
         present = columns[1].text.lower().strip().replace(" ","_")
         power = columns[2].text.lower().strip().replace(" ","_")

@@ -48,3 +48,11 @@ services:
     ports:
       - 9903:9000
     restart: unless-stopped
+  k-frame-exporter:
+    hostname: k-frame-exporter
+    container_name: k-frame-exporter
+    build:
+      context: './k-frame-exporter'
+    ports:
+      - 9904:9000
+    restart: unless-stopped
