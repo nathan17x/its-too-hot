@@ -1,0 +1,51 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+
+
+- job_name: snmp-exporter
+  static_configs:
+    - targets:
+      - x.x.x.x
+  metrics_path: /snmp
+  params:
+    module: [if_mib]
+  relabel_configs:
+    - source_labels: [__address__]
+      target_label: __param_target
+    - source_labels: [__param_target]
+      target_label: instance
+    - target_label: __address__
+      replacement: snmp-exporter:9116
+
+- job_name: carel-exporter-streetside
+  metrics_path: '/metrics/x.x.x.x'
+  static_configs:
+    - targets: [carel-exporter:9000]
+      labels:
+        instance: ac_streetside
+        truck: CENTENNIAL_A
+
+- job_name: carel-exporter-curbside
+  metrics_path: '/metrics/x.x.x.x'
+  static_configs:
+    - targets: [carel-exporter:9000]
+      labels:
+        instance: ac_curbside
+        truck: CENTENNIAL_A
+
+- job_name: cobalt-exporter-udx-frame-1
+  metrics_path: '/metrics/x.x.x.x'
+  static_configs:
+    - targets: [cobalt-exporter:9000]
+      labels:
+        instance: udx_frame_1
+        job_type: cobalt
+        truck: CENTENNIAL_A
+
+
+
+
+

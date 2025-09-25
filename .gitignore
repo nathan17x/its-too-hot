@@ -1,5 +1,6 @@
 # secrets
 config/
+test.py
 
 # data
 data/
