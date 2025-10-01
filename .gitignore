@@ -2,6 +2,9 @@
 config/
 test.py
 
+# allow snmp config
+!snmp-exporter/config/
+
 # data
 data/
 
