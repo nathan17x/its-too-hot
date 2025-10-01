@@ -1,9 +1,0 @@
-services:  
-  k-frame-exporter:
-    hostname: k-frame-exporter
-    container_name: k-frame-exporter
-    build:
-      context: '.'
-    ports:
-      - 9904:9000
-    restart: unless-stopped
