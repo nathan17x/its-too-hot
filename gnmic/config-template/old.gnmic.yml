@@ -1,0 +1,93 @@
+username: admin
+password: admin
+insecure: true
+encoding: json_ietf
+log: true
+
+targets:
+  cent_403RA:
+    address: "x.x.x.x:xxxx"
+    username: un
+    password: pw
+    insecure: true
+    subscriptions: [interface_stats]
+
+subscriptions:
+  interface_stats:
+    paths:
+      - /interfaces/interface/state
+    stream-mode: sample
+    sample-interval: 15s
+
+outputs:
+  prom-output:
+    type: prometheus
+    listen: :9000
+    path: /metrics
+    expiration: 60s
+    metric-prefix: "gnmic_test3_"
+    timeout: 15s
+    strings-as-labels: true
+    event-processors:
+      - group-interface-events
+      - status-replace
+      - convert-strings-to-tags
+      - cast-to-numeric
+
+processors:
+  group-interface-events:
+    event-group-by:
+      tags:
+        - "interface_name"
+        - "source"
+
+  status-replace:
+    event-strings:
+      value-names:
+        - ".*admin-status$"
+        - ".*oper-status$"
+      transforms:
+        - replace:
+            apply-on: "value"
+            old: "UP"
+            new: "1"
+        - replace:
+            apply-on: "value"
+            old: "DOWN"
+            new: "0"
+        - replace:
+            apply-on: "value"
+            old: "NOT_PRESENT"
+            new: "2"
+        - replace:
+            apply-on: "value"
+            old: "TESTING"
+            new: "2"
+        - replace:
+            apply-on: "value"
+            old: "LOWER_LAYER_DOWN"
+            new: "0"
+
+  convert-strings-to-tags:
+    event-to-tag:
+      value-names:
+        - ".*description$"
+        - ".*enabled$"
+        - ".*type$"
+        - ".*ifindex$"
+        - ".*hardware-port$"
+        - ".*management$"
+        - ".*inactive$"
+        - ".*name$"
+        - ".*loopback-mode$"
+
+  cast-to-numeric:
+    event-convert:
+      value-names:
+        - ".*admin-status$"
+        - ".*oper-status$"
+        - ".*last-change$"
+        - ".*mtu$"
+        - ".*counters.*"
+      type: int
+
