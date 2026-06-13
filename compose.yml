@@ -94,7 +94,7 @@ services:
     image: ghcr.io/openconfig/gnmic:latest
     volumes:
       - ./gnmic/config/gnmic.yml:/app/gnmic.yml
-    command: ["subscribe", "--config", "/app/gnmic.yml"]
+    command: ["--debug", "subscribe", "--config", "/app/gnmic.yml"]
     ports:
       - 9904:9000
     restart: unless-stopped
