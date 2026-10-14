@@ -9,6 +9,7 @@ services:
       - ./prometheus/config:/etc/prometheus
       - ./prometheus/data:/prometheus
     restart: unless-stopped
+
   # alloy:
   #   hostname: alloy
   #   container_name: alloy
@@ -37,6 +38,8 @@ services:
       - ./alloy/config/config.alloy:/etc/alloy/config.alloy
       - /var/run/docker.sock:/var/run/docker.sock
     command: run --server.http.listen-addr=0.0.0.0:12345 --storage.path=/var/lib/alloy/data /etc/alloy/config.alloy
+    restart: unless-stopped
+
   loki:
     hostname: loki
     container_name: loki
@@ -47,6 +50,8 @@ services:
       - ./loki/config/loki-config.yaml:/etc/loki/local-config.yaml
       - ./loki/data:/tmp/loki
     command: -config.file=/etc/loki/local-config.yaml
+    restart: unless-stopped
+
   grafana:
     hostname: grafana
     container_name: grafana
@@ -59,6 +64,7 @@ services:
       - ./grafana/config:/usr/share/grafana-config
       - ./grafana/data:/var/lib/grafana
     restart: unless-stopped
+
   snmp-exporter:
     hostname: snmp-exporter
     container_name: snmp-exporter
@@ -70,6 +76,7 @@ services:
       - ./snmp-exporter/config:/etc/snmp-exporter
     command: --config.file=/etc/snmp-exporter/snmp.yml
     restart: unless-stopped
+
   carel-exporter:
     hostname: carel-exporter
     container_name: carel-exporter
@@ -78,6 +85,7 @@ services:
     ports:
       - 9902:9000
     restart: unless-stopped
+
   cobalt-exporter:
     hostname: cobalt-exporter
     container_name: cobalt-exporter
@@ -86,6 +94,7 @@ services:
     ports:
       - 9903:9000
     restart: unless-stopped
+
   gnmic:
     hostname: gnmic
     container_name: gnmic
@@ -96,5 +105,33 @@ services:
     ports:
       - 9904:9000
     restart: unless-stopped
-  
+
+  influxdb:
+    image: influxdb:1.8
+    ports:
+      - '8086:8086'
+    volumes:
+      - ./influxdb/:/var/lib/influxdb
+    environment:
+      - INFLUXDB_DB=centennial
+      - INFLUXDB_ADMIN_USER=centennial
+      - INFLUXDB_ADMIN_PASSWORD=centennial
+    restart: unless-stopped
+
+  vtelemetry:
+    image: arkonatechnologies/vtelemetry2
+    depends_on:
+      - influxdb
+    environment:
+      - MACHINES=10.49.7.101,10.49.7.102,10.49.7.103,10.49.7.104,10.49.7.105,10.49.7.106,10.49.7.107,10.49.7.108,10.49.7.109,10.49.7.110,10.49.7.111,10.49.7.112,10.49.7.113,10.49.7.114,10.49.7.115,10.49.7.116,10.49.7.117,10.49.7.118,10.49.7.119,10.49.7.120,10.49.7.121,10.49.7.122,10.49.7.123,10.49.7.124,10.49.24.101,10.49.24.102,10.49.24.103,10.49.24.104,10.49.24.105,10.49.24.106,10.49.24.107,10.49.24.108,10.49.24.109,10.49.24.110,10.49.24.111,10.49.24.112,10.49.24.113,10.49.24.114,10.49.24.115,10.49.24.116,10.49.24.117,10.49.24.118,10.49.24.119,10.49.24.120,10.49.24.121,10.49.24.122,10.49.24.123,10.49.24.124,10.49.24.125,10.49.24.126,10.49.24.127,10.49.24.128,10.49.24.129,10.49.24.130,10.49.24.131,10.49.24.132,10.49.24.133,10.49.24.134,10.49.24.135,10.49.24.136,10.49.24.137,10.49.24.138,10.49.24.139,10.49.24.140,10.49.24.141,10.49.24.142,10.49.24.143,10.49.24.144,10.49.24.145,10.49.24.146,10.49.24.147,10.49.24.148,10.49.24.149,10.49.24.150,10.49.24.151,10.49.24.152,10.49.24.153,10.49.24.154,10.49.24.155,10.49.24.156,10.49.24.157,10.49.24.158,10.49.24.159,10.49.24.160,10.49.24.161,10.49.24.162,10.49.24.163,10.49.24.164
+      - BLACKLIST=.*
+      - WHITELIST=system.temperature
+      - INFLUX_API=1
+      - DB_HOST=influxdb
+      - DB_USER=centennial
+      - DB_PASSWORD=centennial
+      - DB_NAME=centennial
+      - DB_PORT=8086
+      - VERBOSITY=1
+    restart: unless-stopped  
 
